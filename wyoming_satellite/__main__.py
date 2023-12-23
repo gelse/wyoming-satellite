@@ -40,7 +40,7 @@ async def main() -> None:
 
     # Microphone input
     parser.add_argument("--mic-uri", help="URI of Wyoming microphone service")
-    parser.add_argument("--mic-command", help="Program to run for microphone input")
+    parser.add_argument("--mic-device", help="microphone input device")
     parser.add_argument(
         "--mic-command-rate",
         type=int,
@@ -73,7 +73,7 @@ async def main() -> None:
 
     # Sound output
     parser.add_argument("--snd-uri", help="URI of Wyoming sound service")
-    parser.add_argument("--snd-command", help="Program to run for sound output")
+    parser.add_argument("--snd-device", help="sound output device")
     parser.add_argument(
         "--snd-command-rate",
         type=int,
@@ -218,8 +218,8 @@ async def main() -> None:
     args = parser.parse_args()
 
     # Validate args
-    if (not args.mic_uri) and (not args.mic_command):
-        _LOGGER.fatal("Either --mic-uri or --mic-command is required")
+    if (not args.mic_uri) and (not args.mic_device):
+        _LOGGER.fatal("Either --mic-uri or --mic-device is required")
         sys.exit(1)
 
     if needs_webrtc(args):
@@ -263,7 +263,7 @@ async def main() -> None:
     settings = SatelliteSettings(
         mic=MicSettings(
             uri=args.mic_uri,
-            command=_split(args.mic_command),
+            command=['arecord', args.mic_device],
             rate=args.mic_command_rate,
             width=args.mic_command_width,
             channels=args.mic_command_channels,
@@ -286,7 +286,7 @@ async def main() -> None:
         ),
         snd=SndSettings(
             uri=args.snd_uri,
-            command=_split(args.snd_command),
+            command=['aplay', args.snd_device],
             rate=args.snd_command_rate,
             width=args.snd_command_width,
             channels=args.snd_command_channels,
