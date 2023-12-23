@@ -263,7 +263,7 @@ async def main() -> None:
     settings = SatelliteSettings(
         mic=MicSettings(
             uri=args.mic_uri,
-            command=['arecord', args.mic_device],
+            command=['arecord', args.mic_device, '-f', 'S16_LE', '-t', 'raw'],
             rate=args.mic_command_rate,
             width=args.mic_command_width,
             channels=args.mic_command_channels,
@@ -286,7 +286,7 @@ async def main() -> None:
         ),
         snd=SndSettings(
             uri=args.snd_uri,
-            command=['aplay', args.snd_device],
+            command=['aplay', args.snd_device, '-f', 'S16_LE', '-t', 'raw'],
             rate=args.snd_command_rate,
             width=args.snd_command_width,
             channels=args.snd_command_channels,
