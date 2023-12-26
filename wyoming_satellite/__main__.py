@@ -128,7 +128,6 @@ async def main() -> None:
     )
     parser.add_argument(
         "--snd-command-format",
-        type=int,
         default=os.environ.get('SND_FORMAT') or 'S16_LE',
         help="Sample format of snd-command (default: S16_LE)",
     )
