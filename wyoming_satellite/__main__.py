@@ -6,6 +6,7 @@ import shlex
 import sys
 import time
 import uuid
+import os
 from functools import partial
 from pathlib import Path
 from typing import List, Optional
@@ -39,25 +40,38 @@ async def main() -> None:
     parser = argparse.ArgumentParser()
 
     # Microphone input
-    parser.add_argument("--mic-uri", help="URI of Wyoming microphone service")
-    parser.add_argument("--mic-device", help="microphone input device")
+    parser.add_argument(
+        "--mic-uri",
+        help="URI of Wyoming microphone service",
+        default=os.environ.get('MIC_URI')
+    )
+    parser.add_argument(
+        "--mic-device",
+        help="microphone input device",
+        default=os.environ.get('MIC_DEVICE')
+    )
     parser.add_argument(
         "--mic-command-rate",
         type=int,
-        default=16000,
+        default=os.environ.get('MIC_RATE') or 16000,
         help="Sample rate of mic-command (hertz, default: 16000)",
     )
     parser.add_argument(
         "--mic-command-width",
         type=int,
-        default=2,
+        default=os.environ.get('MIC_WIDTH') or 2,
         help="Sample width of mic-command (bytes, default: 2)",
     )
     parser.add_argument(
         "--mic-command-channels",
         type=int,
-        default=1,
+        default=os.environ.get('MIC_CHANNELS') or 1,
         help="Sample channels of mic-command (default: 1)",
+    )
+    parser.add_argument(
+        "--mic-command-format",
+        default=os.environ.get('MIC_FORMAT') or 'S16_LE',
+        help="Sample format of mic-command (default: S16_LE)",
     )
     parser.add_argument(
         "--mic-command-samples-per-chunk",
@@ -65,44 +79,80 @@ async def main() -> None:
         default=1024,
         help="Sample per chunk for mic-command (default: 1024)",
     )
-    parser.add_argument("--mic-volume-multiplier", type=float, default=1.0)
     parser.add_argument(
-        "--mic-noise-suppression", type=int, default=0, choices=(0, 1, 2, 3, 4)
+        "--mic-volume-multiplier",
+        type=float,
+        default=os.environ.get('MIC_VOLUME') or 1.0
     )
-    parser.add_argument("--mic-auto-gain", type=int, default=0, choices=list(range(32)))
+    parser.add_argument(
+        "--mic-noise-suppression",
+        type=int,
+        default=os.environ.get('MIC_NOISE_SUPPRESSION') or 0,
+        choices=(0, 1, 2, 3, 4)
+    )
+    parser.add_argument(
+        "--mic-auto-gain",
+        type=int,
+        default=os.environ.get('MIC_AUTO_GAIN') or 0,
+        choices=list(range(32))
+    )
 
     # Sound output
-    parser.add_argument("--snd-uri", help="URI of Wyoming sound service")
-    parser.add_argument("--snd-device", help="sound output device")
+    parser.add_argument(
+        "--snd-uri",
+        help="URI of Wyoming sound service",
+        default=os.environ.get('SND_URI')
+    )
+    parser.add_argument(
+        "--snd-device",
+        help="sound output device",
+        default=os.environ.get('SND_DEVICE')
+    )
     parser.add_argument(
         "--snd-command-rate",
         type=int,
-        default=22050,
+        default=os.environ.get('SND_RATE') or 22050,
         help="Sample rate of snd-command (hertz, default: 22050)",
     )
     parser.add_argument(
         "--snd-command-width",
         type=int,
-        default=2,
+        default=os.environ.get('SND_WIDTH') or 2,
         help="Sample width of snd-command (bytes, default: 2)",
     )
     parser.add_argument(
         "--snd-command-channels",
         type=int,
-        default=1,
+        default=os.environ.get('SND_CHANNELS') or 1,
         help="Sample channels of snd-command (default: 1)",
     )
-    parser.add_argument("--snd-volume-multiplier", type=float, default=1.0)
+    parser.add_argument(
+        "--snd-command-format",
+        type=int,
+        default=os.environ.get('SND_FORMAT') or 'S16_LE',
+        help="Sample format of snd-command (default: S16_LE)",
+    )
+    parser.add_argument(
+        "--snd-volume-multiplier",
+        type=float,
+        default=os.environ.get('SND_VOLUME') or 1.0
+    )
 
     # Local wake word detection
-    parser.add_argument("--wake-uri", help="URI of Wyoming wake word detection service")
+    parser.add_argument(
+        "--wake-uri",
+        help="URI of Wyoming wake word detection service",
+        default=os.environ.get('WAKE_URI')
+    )
     parser.add_argument(
         "--wake-word-name",
         action="append",
-        default=[],
+        default=[os.environ.get('WAKE_WORD')],
         help="Name of wake word to listen for (requires --wake-uri)",
     )
-    parser.add_argument("--wake-command", help="Program to run for wake word detection")
+    parser.add_argument(
+        "--wake-command",
+        help="Program to run for wake word detection")
     parser.add_argument(
         "--wake-command-rate",
         type=int,
@@ -124,7 +174,9 @@ async def main() -> None:
 
     # Voice activity detector
     parser.add_argument(
-        "--vad", action="store_true", help="Wait for speech before streaming audio"
+        "--vad",
+        action="store_true",
+        help="Wait for speech before streaming audio"
     )
     parser.add_argument("--vad-threshold", type=float, default=0.5)
     parser.add_argument("--vad-trigger-level", type=int, default=1)
@@ -132,7 +184,7 @@ async def main() -> None:
     parser.add_argument(
         "--vad-wake-word-timeout",
         type=float,
-        default=5.0,
+        default=3.0,
         help="Seconds before going back to waiting for speech when wake word isn't detected",
     )
 
@@ -188,18 +240,33 @@ async def main() -> None:
 
     # Sounds
     parser.add_argument(
-        "--awake-wav", help="WAV file to play when wake word is detected"
+        "--awake-wav",
+        help="WAV file to play when wake word is detected",
+        default=os.environ.get('WAV_AWAKE')
     )
     parser.add_argument(
-        "--done-wav", help="WAV file to play when voice command is done"
+        "--done-wav",
+        help="WAV file to play when voice command is done",
+        default=os.environ.get('WAV_DONE')
     )
 
     # Satellite details
-    parser.add_argument("--uri", required=True, help="unix:// or tcp://")
     parser.add_argument(
-        "--name", default="Wyoming Satellite", help="Name of the satellite"
+        "--uri",
+        required=True,
+        help="unix:// or tcp://",
+        default=os.environ.get('URI')
     )
-    parser.add_argument("--area", help="Area name of the satellite")
+    parser.add_argument(
+        "--name",
+        default=os.environ.get('NAME') or "Wyoming Satellite",
+        help="Name of the satellite, defaults to 'Wyoming Satellite'",
+    )
+    parser.add_argument(
+        "--area",
+        help="Area name of the satellite",
+        default=os.environ.get('AREA')
+    )
 
     # Zeroconf
     parser.add_argument(
@@ -263,7 +330,7 @@ async def main() -> None:
     settings = SatelliteSettings(
         mic=MicSettings(
             uri=args.mic_uri,
-            command=['arecord', '-D', args.mic_device, '-f', 'S16_LE', '-t', 'raw'],
+            command=['arecord', '-D', args.mic_device, '-c', args.mic_command_channels, '-f', args.mic_command_format, '-t', 'raw'],
             rate=args.mic_command_rate,
             width=args.mic_command_width,
             channels=args.mic_command_channels,
@@ -286,7 +353,7 @@ async def main() -> None:
         ),
         snd=SndSettings(
             uri=args.snd_uri,
-            command=['aplay', '-D', args.snd_device, '-f', 'S16_LE', '-t', 'raw'],
+            command=['aplay', '-D', args.snd_device, '-c', args.snd_command_channels, '-f', args.snd_command_format, '-t', 'raw'],
             rate=args.snd_command_rate,
             width=args.snd_command_width,
             channels=args.snd_command_channels,
